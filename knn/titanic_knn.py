@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 20 08:54:35 2020
+Created on Tue Apr 21 11:21:52 2020
 
-This script is meant to test out the scikit-learn random forest regression
-module. The input data is the Titanic dataset from Kaggle. The goal of this
-analysis will be to predict the survival status of a set of passengers.
-
-@author: Alex Arsenault
+@author: alex
 """
 
 """
@@ -15,11 +11,13 @@ Import packages
 """
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import re, csv
 
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
-from sklearn.ensemble import RandomForestRegressor
-
 
 """
 Scrub through ticket strings and removing extraneous letters.
@@ -72,14 +70,18 @@ def fare_scrub(df_in):
 Categorize sex values.
 """
 def cat_sex(df_in):
-    df_in = pd.get_dummies(df_in, prefix=['Sex'], columns=['Sex'])
+    #df_in = pd.get_dummies(df_in, prefix=['Sex'], columns=['Sex'])
+    df_in["Sex"] = df_in["Sex"].astype('category')
+    df_in["Sex"] = df_in["Sex"].cat.codes
     return df_in
 
 """
 Categorize embarked values.
 """
 def cat_embark(df_in):
-    df_in = pd.get_dummies(df_in, prefix=['Embarked'], columns=['Embarked'])
+    #df_in = pd.get_dummies(df_in, prefix=['Embarked'], columns=['Embarked'])
+    df_in["Embarked"] = df_in["Embarked"].astype('category')
+    df_in["Embarked"] = df_in["Embarked"].cat.codes
     return df_in
 
 """
@@ -110,7 +112,7 @@ def clean_df(df_in):
     df_in = cat_embark(df_in)
     
     # Encode pclass values using pd one-hot    
-    df_in = cat_pclass(df_in)
+    #df_in = cat_pclass(df_in)
     
     return df_in
     
@@ -128,7 +130,6 @@ def feat_select(df_in, *argv):
     pass_id = df_in.pop('PassengerId')
     
     return df_in, pass_id 
-    
 
 """
 Main entry point for program.
@@ -136,19 +137,19 @@ Main entry point for program.
 def main():
 
     # Import training and test data
-    train_df = pd.read_csv('../knn/titanic_train.csv')
-    test_df = pd.read_csv('../knn/titanic_test.csv')
+    train_df = pd.read_csv('../data/titanic_data/titanic_train.csv')
+    test_df = pd.read_csv('../data/titanic_data/titanic_test.csv')
     
     # Clean input data frames
     train_df = clean_df(train_df)
     test_df = clean_df(test_df)
     
     # Feature list 1
-    feature_list = ['PassengerId','Age','SibSp','Parch','Ticket','Fare',\
-                   'Sex_female','Sex_male','Embarked_C','Embarked_Q',\
-                   'Embarked_S','Pclass_1','Pclass_2','Pclass_3']
-    
     """
+    feature_list = ['PassengerId','Age','SibSp','Parch','Ticket','Fare','Sex_female',\
+                   'Sex_male','Embarked_C','Embarked_Q','Embarked_S',\
+                   'Pclass_1','Pclass_2','Pclass_3']
+    
     # Feature list 2
     feature_list = ['PassengerId','Age','SibSp','Parch','Fare','Sex_female',\
                    'Sex_male','Embarked_C','Embarked_Q','Embarked_S',\
@@ -156,72 +157,63 @@ def main():
         
     # Feature list 3
     feature_list = ['PassengerId','Age','SibSp','Parch','Fare','Sex_female',\
-                   'Sex_male',\
-                   'Pclass_1','Pclass_2','Pclass_3']
+                   'Sex_male','Pclass_1','Pclass_2','Pclass_3']
+    
+    # Feature list 4
+    feature_list = ['PassengerId','Age','Fare','Sex_female',\
+                   'Sex_male','Pclass_1','Pclass_2','Pclass_3']
     """
 
+    # Feature list 5 (no one-hot encoding for PClass / Sex)
+    feature_list = ['Pclass','Age','SibSp','Parch','Fare','Sex','PassengerId']
+    
     feature_list_train = ['Survived'] + feature_list
     
-    # Select features for training set
+    # Select features for training/test set
     [train_df, train_pass_id] = feat_select(train_df, feature_list_train)
-    
-    # Select features for test set
     [test_df, test_pass_id] = feat_select(test_df, feature_list)
 
-
-    # Pop off target value
+    # Pop off target value of training set
     y = train_df.pop('Survived')
 
-    # Initialize a RF Regressor and fit to data
-    rf = RandomForestRegressor(n_estimators = 1000, random_state= 23, oob_score=True)
-    rf.fit(train_df, y)
-    
-    # Grab OOB prediction values for each training record
-    prediction_pct = rf.oob_prediction_
-    prediction_survived = []
-    
-    # Loop through and determine Survived = 0 or 1
-    for i in range(len(prediction_pct)):
-        if (prediction_pct[i] >= .5):
-            prediction_survived.append(1)
-        else:
-            prediction_survived.append(0)
-            
-    # Now grade the OOB survival predictions
-    grading_array = [];
-    for i in range(len(prediction_survived)):
-        if (prediction_survived[i] == y[i]):    # prediction was correct
-            grading_array.append(1)
-        else:
-            grading_array.append(0)             # prediction was incorrect
+    # Partition training and test data
+    data_train, data_test, y_train, y_test = train_test_split(train_df, y, \
+                                            test_size = 0.2, random_state=21)
 
-    # Calculate percentage correct            
-    pct_correct = sum(grading_array)/len(grading_array)
+    # Loop through and try multiple values of K
+    num_trials = 50
+    score_array = np.zeros(num_trials)
+    for k in range(1,num_trials):
+        # Initialize a RF Regressor and fit to data
+        knn = KNeighborsRegressor(n_neighbors = k, metric = 'euclidean')
+        knn.fit(data_train, y_train)
+        score_array[k] = knn.score(data_test, y_test)
+  
+    # Determine optimal k
+    k = score_array.argmax()
+    print("Best K to use is: " + str(k))  
+  
+    # Plot scores wrt k
+    plt.scatter(range(1,num_trials),score_array[1:])
+  
+    # Final determination for model
+    knn = KNeighborsRegressor(n_neighbors = k, metric = 'euclidean')
+    knn.fit(train_df, y)
+    final_results = knn.predict(test_df)    
 
-    print("Percentage of correct OOB predictions: %f" %(pct_correct))
-    
-    # Predict the test set
-    test_set_prediction_pct = rf.predict(test_df)
-    test_set_prediction_survived = []
-    
-    
-    # Loop through and determine Survived = 0 or 1, write to output
-    with open ('titanic_results.csv', mode='w') as titanic_results:
+    # Write prediction results
+    with open('titanic_results.csv', mode='w') as titanic_results:
         titanic_write = csv.writer(titanic_results,delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    
         titanic_write.writerow(["PassengerId", "Survived"])
-        
-        for i in range(len(test_set_prediction_pct)):
-            
-            temp_result = 0
-            
-            if (test_set_prediction_pct[i] >= .5):
-                test_set_prediction_survived.append(1)
-                temp_result = 1
+    
+        for i in range(0,len(final_results)):
+            if(final_results[i] >= .5):
+                passenger_result = 1
             else:
-                test_set_prediction_survived.append(0)
-                temp_result = 0
+                passenger_result = 0
             
-            titanic_write.writerow([test_pass_id.iloc[i], temp_result])
+            titanic_write.writerow([test_pass_id[i], passenger_result])
     
     print("Ending main.")
     
