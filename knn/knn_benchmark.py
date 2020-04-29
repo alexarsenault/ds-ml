@@ -23,7 +23,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 
-#@profile
+@profile
 def run_knn():
     
     num_rows = 10000000
@@ -87,15 +87,13 @@ def run_knn():
     
         start_time = time.thread_time_ns()
     
-        knn_regressor = KNeighborsRegressor(n_neighbors=10000,algorithm="kd_tree")
+        knn_regressor = KNeighborsRegressor(n_neighbors=1000,algorithm="kd_tree")
         knn_regressor.fit(rand_data_train, y_data_train)
+        knn_regressor.predict(rand_data_train[0].reshape(1,-1))
         
         end_time = time.thread_time_ns()
         model_time = end_time - start_time
         print("k model: " + str(model_time*(1e-9)) + " s.")
-
-
-
 
 if __name__ == '__main__':
     run_knn()
