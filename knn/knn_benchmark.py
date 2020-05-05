@@ -23,7 +23,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 
-@profile
+#@profile
 def run_knn():
     
     num_rows = 10000000

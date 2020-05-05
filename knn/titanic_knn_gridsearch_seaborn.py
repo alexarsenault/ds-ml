@@ -11,6 +11,7 @@ Import packages
 """
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 import re, csv
 
@@ -165,6 +166,7 @@ def main():
                    'Sex_male','Pclass_1','Pclass_2','Pclass_3']
     """
 
+
     # Feature list 5 (no one-hot encoding for PClass / Sex)
     feature_list = ['Pclass','Age','SibSp','Parch','Fare','Sex','PassengerId']
     
@@ -174,6 +176,7 @@ def main():
     [train_df, train_pass_id] = feat_select(train_df, feature_list_train)
     [test_df, test_pass_id] = feat_select(test_df, feature_list)
 
+  
     # Pop off target value of training set
     y = train_df.pop('Survived')
 
@@ -183,14 +186,14 @@ def main():
 
     # Create grid parameters
     metrics = ["minkowski", "euclidean", "manhattan"]
-    num_neighbors = np.arange(5,50,5)
+    num_neighbors = np.arange(5,30,1)
     param_grid = dict(metric=metrics, n_neighbors=num_neighbors)
     k_folds = 5
    
     knn = KNeighborsRegressor() 
    
     grid = GridSearchCV(knn, param_grid, cv = 5)
-    grid.fit(train_df,y)
+    gs_results = grid.fit(train_df,y)
    
     
     """
@@ -205,16 +208,19 @@ def main():
    """
     
     # Determine optimal k
-    k = score_array.argmax()
-    print("Best K to use is: " + str(k))  
+    #k = score_array.argmax()
+    #print("Best K to use is: " + str(k))  
   
     # Plot scores wrt k
-    plt.scatter(range(1,num_trials),score_array[1:])
+    #plt.scatter(range(1,num_trials),score_array[1:])
   
     # Final determination for model
-    knn = KNeighborsRegressor(n_neighbors = k, metric = 'euclidean')
+    #knn = KNeighborsRegressor(n_neighbors = k, metric = 'euclidean')
+    knn = gs_results.best_estimator_
     knn.fit(train_df, y)
     final_results = knn.predict(test_df)    
+    final_results_train = knn.predict(train_df)
+    train_df['SurvivedPct']  = final_results_train
 
     # Write prediction results
     with open('titanic_results.csv', mode='w') as titanic_results:
@@ -231,6 +237,45 @@ def main():
             titanic_write.writerow([test_pass_id[i], passenger_result])
     
     print("Ending main.")
+    
+    
+    """
+    Plot data
+    """
+    #sns.scatterplot(x='Age',y='SurvivedPct',data=train_df)
+    #sns.scatterplot(x='Sex',y='SurvivedPct',data=train_df)
+    #sns.jointplot(train_df['Age'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
+    #sns.jointplot(train_df['Sex'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
+    #sns.jointplot(train_df['Pclass'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
+    
+    
+    # multiple bivariate kde plots
+    male_df_idx = train_df['Sex']==1
+    female_df_idx = train_df['Sex']==0
+    
+    male_df = train_df[male_df_idx]
+    female_df = train_df[female_df_idx]
+    
+    # Draw the two density plots of estimated data
+    sns.set(style="darkgrid")
+    f,ax = plt.subplots(2)
+    f.set_size_inches(16,12)
+    
+    sns.kdeplot(male_df['Age'], male_df['SurvivedPct'],
+                 cmap="Blues", shade=True, shade_lowest=False, ax=ax[0])
+    
+    sns.kdeplot(female_df['Age'], female_df['SurvivedPct'],
+                 cmap="Reds", shade=True, shade_lowest=False, ax=ax[1])
+
+    blue = sns.color_palette("Blues")[-2]
+    red = sns.color_palette("Reds")[-2]
+    ax[0].text(0, 0, "Male", size=16, color=blue)
+    ax[1].text(0, 0, "Female", size=16, color=red)
+    
+    
+    
+    
+    
     
 if __name__ == "__main__":
     main()
