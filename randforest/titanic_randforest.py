@@ -13,12 +13,14 @@ analysis will be to predict the survival status of a set of passengers.
 """
 Import packages
 """
-import pandas as pd
 import numpy as np
+import pandas as pd
 import re, csv
 
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 
 
 """
@@ -136,8 +138,8 @@ Main entry point for program.
 def main():
 
     # Import training and test data
-    train_df = pd.read_csv('../knn/titanic_train.csv')
-    test_df = pd.read_csv('../knn/titanic_test.csv')
+    train_df = pd.read_csv('./data/titanic_data/titanic_train.csv')
+    test_df = pd.read_csv('./data/titanic_data/titanic_test.csv')
     
     # Clean input data frames
     train_df = clean_df(train_df)
@@ -173,10 +175,42 @@ def main():
     y = train_df.pop('Survived')
 
     # Initialize a RF Regressor and fit to data
-    rf = RandomForestRegressor(n_estimators = 1000, random_state= 23, oob_score=True)
-    rf.fit(train_df, y)
+    #rf = RandomForestRegressor(n_estimators = 1000, random_state= 23, oob_score=True)
+    #rf.fit(train_df, y)
+
+    # Gridsearch parameters
+    n_estimators_gs = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 5)]
+    max_features_gs = ['auto','sqrt']
+    max_depth_gs = [int(x) for x in np.linspace(50, 200, num = 4)]
+    #max_depth_gs.append('None')
+    min_samples_split_gs = [2,5,10]
+    min_samples_leaf_gs = [1,2,4]
+
     
+    features_grid = {'n_estimators': n_estimators_gs,
+                     #'max_features': max_features_gs,
+                     'max_depth': max_depth_gs,
+                     'min_samples_split': min_samples_split_gs,
+                     'min_samples_leaf': min_samples_leaf_gs }
+    
+    #train_df_np = train_df.to_numpy()
+    #y_np = y.to_numpy()
+
+    rf = RandomForestRegressor(oob_score=True)
+    #rand_search = RandomizedSearchCV(rf, features_grid, n_iter=100, n_jobs=-1)
+    #rand_search.fit(train_df,y)
+    
+    #GridSearchCV(rf,features_grid, n_iter = 100)
+    grid = GridSearchCV(rf, features_grid, cv=3, n_jobs=-1)
+    grid.fit(train_df,y)
+    #rf.fit(train_df,y)
+
+    # best params from gridsearch
+    #
+    ##{'max_depth': 50, 'max_features': 'auto', 'min_samples_leaf': 2, 'min_samples_split': 10, 'n_estimators': 200}
+
     # Grab OOB prediction values for each training record
+    rf = grid.best_estimator_
     prediction_pct = rf.oob_prediction_
     prediction_survived = []
     
@@ -188,7 +222,7 @@ def main():
             prediction_survived.append(0)
             
     # Now grade the OOB survival predictions
-    grading_array = [];
+    grading_array = []
     for i in range(len(prediction_survived)):
         if (prediction_survived[i] == y[i]):    # prediction was correct
             grading_array.append(1)
