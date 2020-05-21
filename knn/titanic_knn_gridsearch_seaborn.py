@@ -187,7 +187,9 @@ def main():
     # Create grid parameters
     metrics = ["minkowski", "euclidean", "manhattan"]
     num_neighbors = np.arange(5,30,1)
-    param_grid = dict(metric=metrics, n_neighbors=num_neighbors)
+    weights = ["uniform","distance"]
+
+    param_grid = dict(metric=metrics, n_neighbors=num_neighbors, weights=weights)
     k_folds = 5
    
     knn = KNeighborsRegressor() 

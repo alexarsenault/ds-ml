@@ -138,8 +138,8 @@ Main entry point for program.
 def main():
 
     # Import training and test data
-    train_df = pd.read_csv('./data/titanic_data/titanic_train.csv')
-    test_df = pd.read_csv('./data/titanic_data/titanic_test.csv')
+    train_df = pd.read_csv('../data/titanic_data/titanic_train.csv')
+    test_df = pd.read_csv('../data/titanic_data/titanic_test.csv')
     
     # Clean input data frames
     train_df = clean_df(train_df)
@@ -179,16 +179,16 @@ def main():
     #rf.fit(train_df, y)
 
     # Gridsearch parameters
-    n_estimators_gs = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 5)]
+    n_estimators_gs = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
     max_features_gs = ['auto','sqrt']
-    max_depth_gs = [int(x) for x in np.linspace(50, 200, num = 4)]
-    #max_depth_gs.append('None')
+    max_depth_gs = [int(x) for x in np.linspace(50, 200, num = 10)]
+    max_depth_gs.append('None')
     min_samples_split_gs = [2,5,10]
     min_samples_leaf_gs = [1,2,4]
 
     
     features_grid = {'n_estimators': n_estimators_gs,
-                     #'max_features': max_features_gs,
+                     'max_features': max_features_gs,
                      'max_depth': max_depth_gs,
                      'min_samples_split': min_samples_split_gs,
                      'min_samples_leaf': min_samples_leaf_gs }
