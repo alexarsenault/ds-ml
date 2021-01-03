@@ -133,6 +133,39 @@ def feat_select(df_in, *argv):
     
     return df_in, pass_id 
 
+def heatmap_age_class_plot(train_df):
+    heatmap_data = train_df[['Age', 'Pclass', 'SurvivedPct']]
+    heatmap_data['Age'] = pd.cut(heatmap_data['Age'], 10)
+    heatmap_data = heatmap_data.groupby(['Age', 'Pclass']).mean()
+    heatmap_data = heatmap_data.unstack(level=0)
+    # Draw a heatmap with the numeric values in each cell
+    f, ax = plt.subplots(figsize=(9, 6))
+    ax.figure.subplots_adjust(bottom = 0.3)
+    x_axis_labels = ["0-8.3","8.3-16.3","16.3-24.3","24.3-32.2","32.2-40.2","40.2-48.1","48.1-56.1","56.1-64","64-72","72-90"]
+    sns.heatmap(heatmap_data, xticklabels=x_axis_labels, annot=True, linewidths=.5, ax=ax)
+    plt.tight_layout
+    plt.xlabel('Passenger Age Group')
+    plt.ylabel('Passenger Class')
+    plt.title('Passenger Class vs. Age Group vs. Predicted Survival Percentage')
+    plt.savefig('pclass_vs_age_vs_survival.png', dpi=300)
+
+def heatmap_age_sex_plot(train_df):
+    heatmap_data = train_df[['Age', 'Sex', 'SurvivedPct']]
+    heatmap_data['Age'] = pd.cut(heatmap_data['Age'], 10)
+    heatmap_data = heatmap_data.groupby(['Age', 'Sex']).mean()
+    heatmap_data = heatmap_data.unstack(level=0)
+    # Draw a heatmap with the numeric values in each cell
+    f, ax = plt.subplots(figsize=(9, 6))
+    ax.figure.subplots_adjust(bottom = 0.3)
+    x_axis_labels = ["0-8.3","8.3-16.3","16.3-24.3","24.3-32.2","32.2-40.2","40.2-48.1","48.1-56.1","56.1-64","64-72","72-90"]
+    sns.heatmap(heatmap_data, xticklabels=x_axis_labels, yticklabels=["female", "male"], annot=True, linewidths=.5, ax=ax)
+    
+    plt.tight_layout
+    plt.xlabel('Passenger Age Group')
+    plt.ylabel('Passenger Sex')
+    plt.title('Passenger Sex vs. Age Group vs. Predicted Survival Percentage')
+    plt.savefig('sex_vs_age_vs_survival.png', dpi=300)
+
 """
 Main entry point for program.
 """
@@ -217,8 +250,9 @@ def main():
     #plt.scatter(range(1,num_trials),score_array[1:])
   
     # Final determination for model
-    #knn = KNeighborsRegressor(n_neighbors = k, metric = 'euclidean')
-    knn = gs_results.best_estimator_
+    k = 20
+    knn = KNeighborsRegressor(n_neighbors = 20, metric = 'euclidean')
+    #knn = gs_results.best_estimator_
     knn.fit(train_df, y)
     final_results = knn.predict(test_df)    
     final_results_train = knn.predict(train_df)
@@ -237,18 +271,18 @@ def main():
                 passenger_result = 0
             
             titanic_write.writerow([test_pass_id[i], passenger_result])
-    
-    print("Ending main.")
-    
-    
     """
     Plot data
     """
     #sns.scatterplot(x='Age',y='SurvivedPct',data=train_df)
     #sns.scatterplot(x='Sex',y='SurvivedPct',data=train_df)
-    #sns.jointplot(train_df['Age'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
-    #sns.jointplot(train_df['Sex'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
-    #sns.jointplot(train_df['Pclass'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
+
+    heatmap_age_class_plot(train_df)
+    heatmap_age_sex_plot(train_df)
+    
+    sns.jointplot(train_df['Age'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
+    sns.jointplot(train_df['Sex'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
+    sns.jointplot(train_df['Pclass'], train_df['SurvivedPct'], kind="hex", color="#4CB391")
     
     
     # multiple bivariate kde plots
@@ -274,10 +308,6 @@ def main():
     ax[0].text(0, 0, "Male", size=16, color=blue)
     ax[1].text(0, 0, "Female", size=16, color=red)
     
-    
-    
-    
-    
-    
+  
 if __name__ == "__main__":
     main()
