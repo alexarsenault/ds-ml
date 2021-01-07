@@ -11,6 +11,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import train_test_split
 
 
 
@@ -50,12 +51,19 @@ def main():
     mask = np.zeros_like(corr_matrix)
     mask[np.triu_indices_from(mask)] = True
     sns.heatmap(corr_matrix, mask=mask, vmin = -1, vmax = 1, center = 0)
-    #plt.show()
-
+    plt.title('Feature Correlation Matrix')
+    plt.tight_layout()
+    plt.savefig('feature_correlation_matrix.png', dpi=300)
+    plt.show()
 
     # explore variable pairs
-    sns.scatterplot(x=train_df["GarageArea"], y=train_df["GarageCars"])
-    #plt.show()
+    sns.scatterplot(x=train_df["OverallQual"], y=train_df["SalePrice"])
+    plt.title('Overall Quality vs. Sale Price')
+    plt.xlabel('Overall Quality (1-10)')
+    plt.ylabel('Sale Price ($)')
+    plt.tight_layout()
+    plt.savefig('qual_price_scatter.png', dpi=300)
+    plt.show()
 
     # Find outliers of the features we want to use
     out_ind_oq = pd.Series(find_outliers(train_df["OverallQual"],4))
@@ -113,6 +121,8 @@ def main():
                              "1stFlrSF", "FullBath","TotRmsAbvGrd","YearBuilt","YearRemodAdd", "GarageYrBlt"]]
     test_df_use_Id = test_df["Id"]
 
+    X_train, X_test, y_train, y_test = train_test_split(train_df_use, train_df['SalePrice'], test_size=0.25, random_state=10)
+
     # Search parameters
     n_estimators_gs = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
     max_features_gs = ['auto','sqrt']
@@ -154,34 +164,42 @@ def main():
     plt.scatter(y,y_pred)
     plt.show()
 
-    print("Done with Lasso model.")
+    # prepare data for enumerate
+    lambdas = (0.001, 0.01, 0.1, 0.5, 1, 2, 10, 100, 1000)
+    coeff_a = np.zeros((len(lambdas), train_df_use.shape[1]))
+    train_r_squared = np.zeros(len(lambdas))
+    test_r_squared = np.zeros(len(lambdas))
+
+    # enumerate through lambdas with index and i
+    for ind, i in enumerate(lambdas):    
+        reg = Lasso(alpha=i)
+        reg.fit(X_train, y_train)
+
+        coeff_a[ind,:] = reg.coef_
+        train_r_squared[ind] = reg.score(X_train, y_train)
+        test_r_squared[ind] = reg.score(X_test, y_test)
     
+    # Plotting
+    plt.figure(figsize=(18, 8))
+    plt.plot(train_r_squared, 'bo-', label=r'$R^2$ Training set', color="darkblue", alpha=0.6, linewidth=3)
+    plt.plot(test_r_squared, 'bo-', label=r'$R^2$ Test set', color="darkred", alpha=0.6, linewidth=3)
+    plt.xlabel('Lamda index'); plt.ylabel(r'$R^2$')
+    plt.xlim(0, 8)
+    #plt.title(r'Evaluate lasso regression with lamdas: 0 = 0.001, 1= 0.01, 2 = 0.1, 3 = 0.5, 4= 1, 5= 2, 6 = 10, 7 = 100, 8 = 1000')
+    plt.legend(loc='best')
+    plt.grid()
+    plt.savefig('lambda_lasso_effect.png', dpi=300)
+    plt.show()
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # Loop through and determine Survived = 0 or 1, write to output
+    # Write to output
     with open ('housing_results.csv', mode='w') as housing_results:
         housing_write = csv.writer(housing_results,delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         housing_write.writerow(["Id", "SalePrice"])
         
         for i in range(len(final_predictions)):
             
-            housing_write.writerow([test_df_use_Id.iloc[i], Lasso_Test[i]])
-
-
-
-
-    
-    print("Ending main.")
+            #housing_write.writerow([test_df_use_Id.iloc[i], Lasso_Test[i]])
+            housing_write.writerow([test_df_use_Id.iloc[i], final_predictions[i]])
 
 if __name__ == "__main__":
     main()
