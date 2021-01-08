@@ -57,12 +57,13 @@ def main():
     plt.show()
 
     # explore variable pairs
-    sns.scatterplot(x=train_df["OverallQual"], y=train_df["SalePrice"])
+    #sns.scatterplot(x=train_df["OverallQual"], y=train_df["SalePrice"])
+    sns.boxplot(x=train_df["OverallQual"], y=train_df["SalePrice"])
     plt.title('Overall Quality vs. Sale Price')
     plt.xlabel('Overall Quality (1-10)')
     plt.ylabel('Sale Price ($)')
     plt.tight_layout()
-    plt.savefig('qual_price_scatter.png', dpi=300)
+    plt.savefig('qual_price_box.png', dpi=300)
     plt.show()
 
     # Find outliers of the features we want to use
@@ -165,7 +166,7 @@ def main():
     plt.show()
 
     # prepare data for enumerate
-    lambdas = (0.001, 0.01, 0.1, 0.5, 1, 2, 10, 100, 1000)
+    lambdas = (0.5, 1, 2, 10, 100, 500, 1000)
     coeff_a = np.zeros((len(lambdas), train_df_use.shape[1]))
     train_r_squared = np.zeros(len(lambdas))
     test_r_squared = np.zeros(len(lambdas))
@@ -184,7 +185,7 @@ def main():
     plt.plot(train_r_squared, 'bo-', label=r'$R^2$ Training set', color="darkblue", alpha=0.6, linewidth=3)
     plt.plot(test_r_squared, 'bo-', label=r'$R^2$ Test set', color="darkred", alpha=0.6, linewidth=3)
     plt.xlabel('Lamda index'); plt.ylabel(r'$R^2$')
-    plt.xlim(0, 8)
+    plt.xlim(0, len(lambdas) - 1)
     #plt.title(r'Evaluate lasso regression with lamdas: 0 = 0.001, 1= 0.01, 2 = 0.1, 3 = 0.5, 4= 1, 5= 2, 6 = 10, 7 = 100, 8 = 1000')
     plt.legend(loc='best')
     plt.grid()
