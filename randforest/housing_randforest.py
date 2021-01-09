@@ -13,8 +13,6 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 
-
-
 def find_outliers(df_col, num_stds_away):
     col_stdev = df_col.std()
     col_mean = df_col.mean()
@@ -57,7 +55,6 @@ def main():
     plt.show()
 
     # explore variable pairs
-    #sns.scatterplot(x=train_df["OverallQual"], y=train_df["SalePrice"])
     sns.boxplot(x=train_df["OverallQual"], y=train_df["SalePrice"])
     plt.title('Overall Quality vs. Sale Price')
     plt.xlabel('Overall Quality (1-10)')
@@ -145,9 +142,7 @@ def main():
 
     rf = grid.best_estimator_
     #prediction_pct = rf.oob_prediction_
-
     final_predictions = rf.predict(test_df_use)
-    
     
     """
     Lasso model
