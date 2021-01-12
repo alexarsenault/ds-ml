@@ -9,6 +9,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import random
 
+def plot_homemade_decision_function(x1, x2, ax=None):
+    ax = plt.gca()
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    x = np.linspace(xlim[0], xlim[1], 30)
+    y = np.linspace(ylim[0], ylim[1], 30)
+    Y, X = np.meshgrid(y, x)
+    xy = np.vstack([X.ravel(), Y.ravel()]).T
+    p = x1*xy[:,0] + x2*xy[:,1]
+    P = p.reshape(X.shape)
+
+    # plot decision boundary and margins
+    ax.contour(X, Y, P, colors='k',
+               levels=[-1, 0, 1], alpha=0.5,
+               linestyles=['--', '-', '--'])
+    """
+    ax.scatter(model.support_vectors_[:, 0],
+                   model.support_vectors_[:, 1],
+                   s=300, linewidth=1, facecolors='none')
+    """
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    plt.xlabel('Sepal Length (cm), X1')
+    plt.ylabel('Petal Length (cm), X2')
+    plt.show()
+
 def plot_svc_decision_function(model, ax=None, plot_support=True):
     """Plot the decision function for a 2D SVC"""
     ax = plt.gca()
@@ -54,12 +80,14 @@ def main():
     versicolor_x = x[50:]
     versicolor_y = y[50:]
 
+    """
     plt.figure(figsize=(8,6))
     plt.scatter(setosa_x,setosa_y,color='green')
     plt.scatter(versicolor_x,versicolor_y,color='red')
     plt.xlabel('Sepal Length (cm)')
     plt.ylabel('Petal Length (cm)')
     plt.show()
+    """
 
     ## Drop rest of the features and extract the target values
     df = df.drop(['SepalWidthCm','PetalWidthCm'],axis=1)
@@ -127,6 +155,10 @@ def main():
     results = (test_predictions == y_test)
     print(results)
 
+    # Plot scatter with SVM boundaries
+    plt.scatter(setosa_x,setosa_y,color='green')
+    plt.scatter(versicolor_x,versicolor_y,color='red')
+    plot_homemade_decision_function(w1[0], w2[0])
 
     # Plot weight values over epochs
     plt.plot(range(len(w1_list)),w1_list,color='b',label='W1')
